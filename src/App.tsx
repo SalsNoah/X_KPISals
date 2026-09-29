@@ -103,7 +103,11 @@ export default function App() {
 
       {kpis && hasProblem && (
         <a className="alert" href="#status">
-          {error || kpis?.status.error ? '通信エラーがあります' : 'データがしばらく更新されていません'}
+          {error || kpis.status.error
+            ? '通信エラーがあります'
+            : kpis.status.lastSuccessAt
+              ? 'データがしばらく更新されていません'
+              : 'まだデータを取得していません'}
           <span aria-hidden="true">→ 更新状態</span>
         </a>
       )}
