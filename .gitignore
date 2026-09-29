@@ -1,0 +1,9 @@
+node_modules/
+dist/
+store/
+.env
+.env.*
+*.log
+
+# ローカル確認用のサンプルデータ（npm run sample で生成）
+public/data/

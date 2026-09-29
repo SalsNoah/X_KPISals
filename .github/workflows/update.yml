@@ -1,0 +1,89 @@
+name: Update KPI
+
+on:
+  schedule:
+    # 3時間ごと（UTC の 0:07, 3:07, ... = 日本時間 9:07, 12:07, ...）
+    - cron: '7 */3 * * *'
+  # Actions 画面の「Run workflow」から手動でも取得できる
+  workflow_dispatch:
+  # コードを変えたときは、取得はせずに画面だけ公開し直す
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: update-kpi
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # 取得履歴は data ブランチの kpi.json に貯める
+      - uses: actions/checkout@v7
+        with:
+          ref: data
+          path: store
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Fetch X metrics
+        id: fetch
+        if: github.event_name != 'push'
+        env:
+          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+          X_USERNAME: ${{ vars.X_USERNAME }}
+        run: npm run fetch -- store/kpi.json
+
+      - name: Save history to data branch
+        if: github.event_name != 'push'
+        working-directory: store
+        run: |
+          git add kpi.json
+          if git diff --cached --quiet; then
+            echo "変更なし"
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898283+github-actions[bot]@users.noreply.github.com" \
+              commit -m "Update KPI data"
+          git push origin HEAD:data
+
+      - run: npm run build
+
+      - name: Add data to site
+        run: |
+          mkdir -p dist/data
+          cp store/kpi.json dist/data/kpi.json
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+      # 画面は公開したうえで、X API のエラーがあれば実行を失敗扱いにして通知する
+      - name: Report fetch error
+        if: steps.fetch.outputs.failed == 'true'
+        env:
+          MESSAGE: ${{ steps.fetch.outputs.message }}
+        run: |
+          echo "::error::$MESSAGE"
+          exit 1
