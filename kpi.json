@@ -3,10 +3,10 @@
   "username": "Sals_mj",
   "snapshots": [],
   "status": {
-    "lastAttemptAt": "2026-10-12T21:20:28.533Z",
+    "lastAttemptAt": "2026-10-13T00:34:47.003Z",
     "lastSuccessAt": null,
     "error": {
-      "at": "2026-10-12T21:20:28.533Z",
+      "at": "2026-10-13T00:34:47.003Z",
       "message": "X_BEARER_TOKEN が設定されていません（GitHub の Secrets に登録してください）"
     }
   }
